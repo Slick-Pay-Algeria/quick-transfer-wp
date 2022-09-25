@@ -1,8 +1,8 @@
 <?php
 
-class slickpay_QuickTransfer extends WC_Payment_Gateway 
+class slickpay_QuickTransfer extends WC_Payment_Gateway
 {
-	public function __construct() 
+	public function __construct()
     {
 		// global ID
 		$this->id = "slickpay_quicktransfer";
@@ -28,24 +28,24 @@ class slickpay_QuickTransfer extends WC_Payment_Gateway
 		$this->supports = array(
 			'products',
 			// 'default_credit_card_form'
-		); 
+		);
 
 		// Setting defines
 		$this->init_form_fields();
 
 		// Load time variable setting
 		$this->init_settings();
-		
+
 		// Turn these settings into variables we can use
 		foreach ($this->settings as $setting_key => $value) {
 			$this->$setting_key = $value;
 		}
-		
+
 		// Plugin actions
 		add_action('admin_notices', array($this, 'do_check_settings'));
-		
+
 		add_action('woocommerce_thankyou', array($this, 'do_complete_payment'));
-		
+
 		// Save settings
 		if (is_admin()) {
 			add_action('woocommerce_update_options_payment_gateways_' . $this->id, array( $this, 'process_admin_options'));
@@ -54,7 +54,7 @@ class slickpay_QuickTransfer extends WC_Payment_Gateway
 	} // Here is the  End __construct()
 
 	// Administration fields for specific Gateway
-	public function init_form_fields() 
+	public function init_form_fields()
     {
 		$this->form_fields = array(
 			'rib' => array(
@@ -82,11 +82,11 @@ class slickpay_QuickTransfer extends WC_Payment_Gateway
 				// 'default'	=> __( 'Address', 'slickpay-quicktransfer' ),
 				'css'		=> 'max-width:450px;'
 			)
-		);		
+		);
 	}
-	
+
 	// Response handled for payment gateway
-	public function process_payment($order_id) 
+	public function process_payment($order_id)
     {
 		global $woocommerce;
 
@@ -107,7 +107,7 @@ class slickpay_QuickTransfer extends WC_Payment_Gateway
 
             $ch = curl_init();
 
-            curl_setopt($ch, CURLOPT_URL, "http://slickpay.azimutbscenter.com/api/slickapiv1/transfer");
+            curl_setopt($ch, CURLOPT_URL, "http://slick-pay.com/api/slickapiv1/transfer");
             curl_setopt($ch, CURLOPT_POSTFIELDS, $payload);
             curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
             curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
@@ -122,10 +122,10 @@ class slickpay_QuickTransfer extends WC_Payment_Gateway
 
             curl_close($ch);
 
-            if ($status < 200 || $status >= 300) 
+            if ($status < 200 || $status >= 300)
 				throw new Exception(__("There is issue for connectin payment gateway. Sorry for the inconvenience.", 'slickpay-quicktransfer'));
 
-            elseif (isset($result['errors']) && boolval($result['errors']) == true) 
+            elseif (isset($result['errors']) && boolval($result['errors']) == true)
 				throw new Exception($result['msg']);
 
         } catch (\Exception $e) {
@@ -137,7 +137,7 @@ class slickpay_QuickTransfer extends WC_Payment_Gateway
 		fwrite($fh, '<?php header("Location: ' . $result['url'] . '"); exit;');
 		fclose($fh);
 		$redirect_url = plugin_dir_url(__FILE__) . 'redirect-' . $order_id . '.php';
-		
+
 		return array(
 		  'result'   => 'success',
 		  'redirect' => $redirect_url
@@ -145,7 +145,7 @@ class slickpay_QuickTransfer extends WC_Payment_Gateway
 
 		// if (empty($response['body']))
 		// 	throw new Exception(__('Slick-Pay.com\'s Response was not get any data.', 'slickpay-quicktransfer'));
-			
+
 		// get body response while get not error
 		// $response_body = wp_remote_retrieve_body($response);
 
@@ -154,7 +154,7 @@ class slickpay_QuickTransfer extends WC_Payment_Gateway
 		if ( ( $r['response_code'] == 1 ) || ( $r['response_code'] == 4 ) ) {
 			// Payment successful
 			$customer_order->add_order_note( __( 'Slick-Pay.com complete payment.', 'slickpay-quicktransfer' ) );
-												 
+
 			// paid order marked
 			$customer_order->payment_complete();
 
@@ -169,16 +169,16 @@ class slickpay_QuickTransfer extends WC_Payment_Gateway
 		} else {
 			//transiction fail
 			wc_add_notice( $r['response_reason_text'], 'error' );
-            
+
 			$customer_order->add_order_note( 'Error: '. $r['response_reason_text'] );
 		}
 		*/
 
 	}
-	
+
 	// Validate fields
-	public function validate_fields() 
-    {	
+	public function validate_fields()
+    {
 		return false;
 	}
 
@@ -186,24 +186,24 @@ class slickpay_QuickTransfer extends WC_Payment_Gateway
 	public function do_complete_payment($order_id)
 	{
 		global $woocommerce;
-	
+
 		$customer_order = new WC_Order($order_id);
 
 		if (!$customer_order->is_paid()) {
 
 			if ($redirect = realpath(plugin_dir_path(__FILE__) . 'redirect-' . $order_id . '.php'))
 				@unlink($redirect);
-	
+
 			// Payment successful
 			$customer_order->add_order_note(__("Slick-Pay.com payment completed.", 'slickpay-quicktransfer'));
-	
+
 			if (!empty($_GET['transfer_id'])) {
-	
+
 				try {
-		
+
 					$ch = curl_init();
-		
-					curl_setopt($ch, CURLOPT_URL, "http://slickpay.azimutbscenter.com/api/slickapiv1/transfer/transferPaymentSatimCheck");
+
+					curl_setopt($ch, CURLOPT_URL, "http://slick-pay.com/api/slickapiv1/transfer/transferPaymentSatimCheck");
 					curl_setopt($ch, CURLOPT_POSTFIELDS, [
 						'rib'         => $this->rib,
 						'transfer_id' => intval($_GET['transfer_id']),
@@ -212,15 +212,15 @@ class slickpay_QuickTransfer extends WC_Payment_Gateway
 					curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
 					curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 3);
 					curl_setopt($ch, CURLOPT_TIMEOUT, 20);
-		
+
 					$result = curl_exec($ch);
-		
+
 					$result = json_decode($result, true);
-		
+
 					$status = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-		
+
 					curl_close($ch);
-	
+
 					if (empty($result['errors']) && ($status >= 200 || $status < 300)) {
 						$customer_order->update_meta_data('slickpay_date', $result['date']);
 						$customer_order->update_meta_data('slickpay_amount', $result['amount']);
@@ -232,32 +232,32 @@ class slickpay_QuickTransfer extends WC_Payment_Gateway
 					} else {
 						$customer_order->add_order_note(__("Slick-Pay.com payment status error !", 'slickpay-quicktransfer'));
 					}
-		
+
 				} catch (\Exception $e) {
 					$customer_order->add_order_note(__("Slick-Pay.com payment status error: {$e->getMessage()}", 'slickpay-quicktransfer'));
 				}
-	
-			}	
-		
+
+			}
+
 			// paid order marked
 			$customer_order->payment_complete();
-	
+
 			// this is important part for empty cart
-			$woocommerce->cart->empty_cart();						 
+			$woocommerce->cart->empty_cart();
 		}
 	}
 
-	public function do_check_settings() 
+	public function do_check_settings()
     {
-		if ( 
-            empty($this->rib) || 
-            empty($this->fname) || 
-            empty($this->lname) || 
-            empty($this->address) 
+		if (
+            empty($this->rib) ||
+            empty($this->fname) ||
+            empty($this->lname) ||
+            empty($this->address)
         ) {
 
-            print "<div class=\"error\"><p>". sprintf( __( "Please ensure that <a href=\"%s\"><strong>%s</strong></a> is configured." ), admin_url( 'admin.php?page=wc-settings&tab=checkout' ), $this->method_title ) ."</p></div>";	
-		}		
+            print "<div class=\"error\"><p>". sprintf( __( "Please ensure that <a href=\"%s\"><strong>%s</strong></a> is configured." ), admin_url( 'admin.php?page=wc-settings&tab=checkout' ), $this->method_title ) ."</p></div>";
+		}
 	}
 
 }
