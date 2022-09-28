@@ -142,38 +142,6 @@ class slickpay_QuickTransfer extends WC_Payment_Gateway
 		  'result'   => 'success',
 		  'redirect' => $redirect_url
 		);
-
-		// if (empty($response['body']))
-		// 	throw new Exception(__('Slick-Pay.com\'s Response was not get any data.', 'slickpay-quicktransfer'));
-
-		// get body response while get not error
-		// $response_body = wp_remote_retrieve_body($response);
-
-		/*
-		// 1 or 4 means the transaction was a success
-		if ( ( $r['response_code'] == 1 ) || ( $r['response_code'] == 4 ) ) {
-			// Payment successful
-			$customer_order->add_order_note( __( 'Slick-Pay.com complete payment.', 'slickpay-quicktransfer' ) );
-
-			// paid order marked
-			$customer_order->payment_complete();
-
-			// this is important part for empty cart
-			$woocommerce->cart->empty_cart();
-
-			// Redirect to thank you page
-			return array(
-				'result'   => 'success',
-				'redirect' => $this->get_return_url( $customer_order ),
-			);
-		} else {
-			//transiction fail
-			wc_add_notice( $r['response_reason_text'], 'error' );
-
-			$customer_order->add_order_note( 'Error: '. $r['response_reason_text'] );
-		}
-		*/
-
 	}
 
 	// Validate fields
@@ -190,12 +158,6 @@ class slickpay_QuickTransfer extends WC_Payment_Gateway
 		$customer_order = new WC_Order($order_id);
 
 		if (!$customer_order->is_paid()) {
-
-			if ($redirect = realpath(plugin_dir_path(__FILE__) . 'redirect-' . $order_id . '.php'))
-				@unlink($redirect);
-
-			// Payment successful
-			$customer_order->add_order_note(__("Slick-Pay.com payment completed.", 'slickpay-quicktransfer'));
 
 			if (!empty($_GET['transfer_id'])) {
 
@@ -221,7 +183,14 @@ class slickpay_QuickTransfer extends WC_Payment_Gateway
 
 					curl_close($ch);
 
-					if (empty($result['errors']) && ($status >= 200 || $status < 300)) {
+					if (!empty($result['orderId']) && ($status >= 200 || $status < 300)) {
+
+						// Payment successful
+						$customer_order->add_order_note(__("Slick-Pay.com payment completed.", 'slickpay-quicktransfer'));
+
+						if ($redirect = realpath(plugin_dir_path(__FILE__) . 'redirect-' . $order_id . '.php'))
+							@unlink($redirect);
+
 						$customer_order->update_meta_data('slickpay_date', $result['date']);
 						$customer_order->update_meta_data('slickpay_amount', $result['amount']);
 						$customer_order->update_meta_data('slickpay_orderId', $result['orderId']);
@@ -229,21 +198,26 @@ class slickpay_QuickTransfer extends WC_Payment_Gateway
 						$customer_order->update_meta_data('slickpay_approvalCode', $result['approvalCode']);
 						$customer_order->update_meta_data('slickpay_pdf', $result['pdf']);
 						$customer_order->update_meta_data('slickpay_respCode', $result['respCode_desc']);
+
+						// paid order marked
+						$customer_order->payment_complete();
+			
+						// this is important part for empty cart
+						$woocommerce->cart->empty_cart();
 					} else {
 						$customer_order->add_order_note(__("Slick-Pay.com payment status error !", 'slickpay-quicktransfer'));
+
+						wc_clear_notices();
+						wc_add_notice(__("An error has occured, please reload the page !", 'slickpay-quicktransfer'), 'error');
+						wc_print_notices();
 					}
 
 				} catch (\Exception $e) {
-					$customer_order->add_order_note(__("Slick-Pay.com payment status error: {$e->getMessage()}", 'slickpay-quicktransfer'));
+					wc_clear_notices();
+					wc_add_notice(__("An error has occured, please reload the page !", 'slickpay-quicktransfer'), 'error');
+					wc_print_notices();
 				}
-
 			}
-
-			// paid order marked
-			$customer_order->payment_complete();
-
-			// this is important part for empty cart
-			$woocommerce->cart->empty_cart();
 		}
 	}
 
