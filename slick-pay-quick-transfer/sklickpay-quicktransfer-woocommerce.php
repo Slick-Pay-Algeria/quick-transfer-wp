@@ -138,6 +138,9 @@ class slickpay_QuickTransfer extends WC_Payment_Gateway
 		fclose($fh);
 		$redirect_url = plugin_dir_url(__FILE__) . 'redirect-' . $order_id . '.php';
 
+        $customer_order->update_meta_data('slickpay_transfer_id', $result['transfer_id']);
+        $customer_order->save();
+
 		return array(
 		  'result'   => 'success',
 		  'redirect' => $redirect_url
@@ -159,7 +162,9 @@ class slickpay_QuickTransfer extends WC_Payment_Gateway
 
 		if (!$customer_order->is_paid()) {
 
-			if (!empty($_GET['transfer_id'])) {
+            $transfer_id = $customer_order->get_meta('slickpay_transfer_id');
+
+            if (!empty($transfer_id)) {
 
 				try {
 
@@ -168,7 +173,7 @@ class slickpay_QuickTransfer extends WC_Payment_Gateway
 					curl_setopt($ch, CURLOPT_URL, "http://slick-pay.com/api/slickapiv1/transfer/transferPaymentSatimCheck");
 					curl_setopt($ch, CURLOPT_POSTFIELDS, [
 						'rib'         => $this->rib,
-						'transfer_id' => intval($_GET['transfer_id']),
+						'transfer_id' => intval($transfer_id),
 					]);
 					curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
 					curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
@@ -201,7 +206,7 @@ class slickpay_QuickTransfer extends WC_Payment_Gateway
 
 						// paid order marked
 						$customer_order->payment_complete();
-			
+
 						// this is important part for empty cart
 						$woocommerce->cart->empty_cart();
 					} else {
