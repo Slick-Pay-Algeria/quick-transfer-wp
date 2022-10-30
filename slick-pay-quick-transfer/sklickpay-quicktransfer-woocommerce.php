@@ -57,6 +57,17 @@ class slickpay_QuickTransfer extends WC_Payment_Gateway
 	public function init_form_fields()
     {
 		$this->form_fields = array(
+			'sandbox' => array(
+				'title'		=> __( 'Sandbox', 'slickpay-quicktransfer' ),
+				'type'		=> 'select',
+				'desc_tip'	=> __( 'Toggle sandbox env.', 'slickpay-quicktransfer' ),
+				'default'   => '1',
+				'options'   => [
+					'1' => __("On", 'slickpay-quicktransfer'),
+					'0' => __("Off", 'slickpay-quicktransfer'),
+				]
+				// 'default'	=> __( '00012345678912345678', 'slickpay-quicktransfer' ),
+			),
 			'rib' => array(
 				'title'		=> __( 'RIB', 'slickpay-quicktransfer' ),
 				'type'		=> 'text',
@@ -107,7 +118,11 @@ class slickpay_QuickTransfer extends WC_Payment_Gateway
 
             $ch = curl_init();
 
-            curl_setopt($ch, CURLOPT_URL, "http://slick-pay.com/api/slickapiv1/transfer");
+			$domain_name = boolval($this->sandbox) === true
+				? "dev.quick.slick-pay.com"
+				: "quick.slick-pay.com";
+
+            curl_setopt($ch, CURLOPT_URL, "http://{$domain_name}/api/slickapiv1/transfer");
             curl_setopt($ch, CURLOPT_POSTFIELDS, $payload);
             curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
             curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
@@ -170,7 +185,11 @@ class slickpay_QuickTransfer extends WC_Payment_Gateway
 
 					$ch = curl_init();
 
-					curl_setopt($ch, CURLOPT_URL, "http://slick-pay.com/api/slickapiv1/transfer/transferPaymentSatimCheck");
+					$domain_name = boolval($this->sandbox) === true
+						? "dev.quick.slick-pay.com"
+						: "quick.slick-pay.com";
+
+					curl_setopt($ch, CURLOPT_URL, "http://{$domain_name}/api/slickapiv1/transfer/transferPaymentSatimCheck");
 					curl_setopt($ch, CURLOPT_POSTFIELDS, [
 						'rib'         => $this->rib,
 						'transfer_id' => intval($transfer_id),

@@ -35,6 +35,10 @@ Finally, don't forget to setup your informations within the plugin settings by c
 
 Each of options is explained below :
 
+### Sandbox
+
+Will indicate if you want to use a sandbox or live environment (default: true).
+
 ### RIB
 
 It will define the merchant bank account ID, it should be a string with the exact size of 20 characters.
